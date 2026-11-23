@@ -681,15 +681,4 @@ MoonCreditFi separates its blockchain infrastructure into distinct responsibilit
 
 The result is a financing architecture in which off-chain business processes interact with transparent on-chain financial operations.
 
-**MoonCreditFi — Trust Before Capital.**
-:::Recommended documentation sidebar
-Add these entries under your Contracts section:
-Contracts
-├── Overview
-├── Blockchain Architecture & Flowcharts
-├── Program Architecture
-├── Accounts & PDAs
-├── USDC Vault Architecture
-├── Mudarabah Lifecycle
-├── Capital Disbursement
-└── Settlement & Distribution
+
