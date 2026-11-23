@@ -1528,13 +1528,3 @@ How are genuine losses verified?	A smart contract cannot independently verify bu
 How is rounding dust handled?	Prevents unexplained residual funds.
 Who controls program upgrades?	Protects investors from unilateral changes to program behavior.
 What happens when an entrepreneur disappears?	Disbursement cannot guarantee recovery.
-
-
-One important correction to the architecture: A pool vault should not simply be a wallet from which the administrator can withdraw funds. Its authority should be controlled by the program, with tightly validated instructions governing every transfer.
-4. Technical references
-These official references are useful when implementing and verifying the documentation:
-- Solana — Program Derived Addresses
-- Anchor — Account Constraints
-- Anchor — Creating Token Accounts
-- Anchor — Token Transfers
-- Solana — Building Your First Anchor Program
