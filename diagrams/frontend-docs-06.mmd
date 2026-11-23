@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant W as Wallet
+    participant S as Solana RPC
+    participant P as Anchor Program
+
+    U->>F: Initiates contribution
+    F->>S: Fetch account and pool state
+    S-->>F: Return account data
+    F->>F: Build transaction
+    F->>W: Request transaction signature
+    W-->>U: Display approval request
+    U->>W: Approve transaction
+    W-->>F: Signed transaction
+    F->>S: Submit transaction
+    S->>P: Execute Anchor instruction
+    P-->>S: Execution result
+    S-->>F: Transaction confirmation
+    F->>S: Refresh pool and investor position
+    S-->>F: Updated on-chain state
+    F-->>U: Display verified result

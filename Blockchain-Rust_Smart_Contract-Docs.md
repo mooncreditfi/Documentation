@@ -109,58 +109,9 @@ Mainnet deployment must only happen after the required security, legal, operatio
 
 ## 2.2 High-level blockchain architecture
 
-```mermaid
-flowchart TB
-    USER[Entrepreneur / Investor]
+![High-level blockchain architecture](diagrams/blockchain-rust-smart-contract-docs-01.svg)
 
-    subgraph FRONTEND["MoonCreditFi Frontend"]
-        UI[User Interface]
-        WALLET[Solana Wallet]
-        CLIENT[Anchor Client]
-    end
-
-    subgraph PROGRAM["MoonCreditFi Solana Program"]
-        CONFIG[Platform Config]
-        ENTRE[Entrepreneur Profile]
-        PROPOSAL[Business Proposal]
-        POOL[Mudarabah Pool]
-        POSITION[Investor Position]
-        SETTLEMENT[Settlement Record]
-    end
-
-    subgraph TOKEN["SPL Token Infrastructure"]
-        MINT[USDC Mint]
-        VAULT[Pool USDC Vault]
-        ATA[Investor Token Account]
-    end
-
-    subgraph EXTERNAL["Off-chain Infrastructure"]
-        BACKEND[MoonCreditFi Backend]
-        DATABASE[(PostgreSQL)]
-        VERIFY[Business Verification]
-        CRED[CredLayer Reputation]
-    end
-
-    USER --> UI
-    UI --> WALLET
-    UI --> CLIENT
-    CLIENT --> PROGRAM
-
-    CONFIG --> ENTRE
-    ENTRE --> PROPOSAL
-    PROPOSAL --> POOL
-    POOL --> POSITION
-    POOL --> SETTLEMENT
-
-    WALLET --> ATA
-    MINT --> VAULT
-    ATA <--> VAULT
-
-    UI <--> BACKEND
-    BACKEND <--> DATABASE
-    BACKEND --> VERIFY
-    BACKEND --> CRED
-```
+[Mermaid source](diagrams/blockchain-rust-smart-contract-docs-01.mmd)
 
 ## 2.3 Responsibilities of each layer
 
@@ -459,20 +410,9 @@ These seeds are proposed design conventions. The actual seed definitions in the 
 
 ## 5.3 PDA architecture diagram
 
-```mermaid
-flowchart TD
-    PROGRAM[MoonCreditFi Program ID]
+![PDA architecture diagram](diagrams/blockchain-rust-smart-contract-docs-02.svg)
 
-    PROGRAM --> CONFIG[Platform Config PDA]
-    PROGRAM --> ENTRE[Entrepreneur Profile PDA]
-    PROGRAM --> PROPOSAL[Business Proposal PDA]
-    PROGRAM --> POOL[Mudarabah Pool PDA]
-    PROGRAM --> POSITION[Investor Position PDA]
-    PROGRAM --> SETTLE[Settlement Record PDA]
-
-    POOL --> VAULTAUTH[Pool Vault Authority PDA]
-    VAULTAUTH --> VAULT[USDC Token Vault]
-```
+[Mermaid source](diagrams/blockchain-rust-smart-contract-docs-02.mmd)
 
 ## 5.4 PDA security
 
@@ -502,27 +442,9 @@ The program controls withdrawals through the vault authority PDA.
 
 ## 6.2 Vault structure
 
-```mermaid
-flowchart TD
-    INVESTOR[Investor Wallet]
-    ATA[Investor USDC Token Account]
+![Vault structure](diagrams/blockchain-rust-smart-contract-docs-03.svg)
 
-    subgraph PROGRAM["MoonCreditFi Program"]
-        POOL[Mudarabah Pool]
-        AUTH[Vault Authority PDA]
-        VAULT[Pool USDC Token Vault]
-    end
-
-    ENTRE[Entrepreneur Wallet]
-
-    INVESTOR --> ATA
-    ATA -->|Contribution| VAULT
-
-    POOL --> AUTH
-    AUTH --> VAULT
-
-    VAULT -->|Authorized Disbursement| ENTRE
-```
+[Mermaid source](diagrams/blockchain-rust-smart-contract-docs-03.mmd)
 
 ## 6.3 Contribution process
 
@@ -705,25 +627,9 @@ Proposed lifecycle:
 
 ## 8.2 Lifecycle diagram
 
-```mermaid
-stateDiagram-v2
-    [*] --> Open
+![Lifecycle diagram](diagrams/blockchain-rust-smart-contract-docs-04.svg)
 
-    Open --> Funded: Funding target reached
-
-    Open --> Cancelled: Authorized cancellation
-
-    Funded --> Active: Capital disbursed
-
-    Funded --> Cancelled: Permitted cancellation
-
-    Active --> SettlementPending: Settlement submitted
-
-    SettlementPending --> Settled: Settlement approved
-
-    Settled --> [*]
-    Cancelled --> [*]
-```
+[Mermaid source](diagrams/blockchain-rust-smart-contract-docs-04.mmd)
 
 The contract must enforce valid transitions.
 
@@ -969,71 +875,21 @@ Responsibilities:
 
 ## 10.1 Investor contribution
 
-```mermaid
-sequenceDiagram
-    participant I as Investor
-    participant F as Frontend
-    participant W as Solana Wallet
-    participant R as Solana RPC
-    participant P as MoonCreditFi Program
-    participant V as USDC Vault
+![Investor contribution](diagrams/blockchain-rust-smart-contract-docs-05.svg)
 
-    I->>F: Select funding pool
-    F->>R: Read pool and investor state
-    R-->>F: Return account information
-    F->>W: Request contribution signature
-    W-->>I: Display transaction
-    I->>W: Approve
-    W->>R: Submit signed transaction
-    R->>P: Execute contribute instruction
-    P->>P: Validate signer and accounts
-    P->>V: Transfer USDC through Token Program
-    P->>P: Update InvestorPosition
-    P->>P: Update MudarabahPool
-    P-->>R: Emit event and return result
-    R-->>F: Confirm transaction
-    F-->>I: Display verified contribution
-```
+[Mermaid source](diagrams/blockchain-rust-smart-contract-docs-05.mmd)
 
 ## 10.2 Capital disbursement
 
-```mermaid
-flowchart TD
-    A[Pool Reaches Funding Target] --> B[Validate Pool Status]
-    B --> C{Fully Funded?}
+![Capital disbursement](diagrams/blockchain-rust-smart-contract-docs-06.svg)
 
-    C -->|No| D[Reject Disbursement]
-    C -->|Yes| E[Authorize Activation]
-
-    E --> F[Activate Pool]
-    F --> G[Authorize Capital Disbursement]
-    G --> H[Validate Vault Authority]
-    H --> I[Transfer USDC]
-    I --> J[Update Pool State]
-    J --> K[Emit Disbursement Event]
-    K --> L[Refresh Frontend]
-```
+[Mermaid source](diagrams/blockchain-rust-smart-contract-docs-06.mmd)
 
 ## 10.3 Settlement and distribution
 
-```mermaid
-flowchart TD
-    A[Business Activity] --> B[Entrepreneur Submits Settlement]
-    B --> C[Settlement Record Created]
-    C --> D[Independent Review]
-    D --> E{Settlement Approved?}
+![Settlement and distribution](diagrams/blockchain-rust-smart-contract-docs-07.svg)
 
-    E -->|No| F[Request Additional Evidence]
-    F --> D
-
-    E -->|Yes| G[Approve Settlement]
-    G --> H[Calculate Profit or Loss]
-    H --> I[Calculate Investor Entitlements]
-    I --> J[Investors Claim Distribution]
-    J --> K[Reconcile Investor Claims]
-    K --> L[Entrepreneur Claims Eligible Profit]
-    L --> M[Final Accounting]
-```
+[Mermaid source](diagrams/blockchain-rust-smart-contract-docs-07.mmd)
 
 ---
 
@@ -1336,25 +1192,9 @@ Run the tests specified by the repository and verify that they cover the critica
 
 ## 15.1 Deployment lifecycle
 
-```mermaid
-flowchart TD
-    A[Complete Contract Development] --> B[Run Unit Tests]
-    B --> C[Run Integration Tests]
-    C --> D[Run Security Checks]
-    D --> E{All Checks Passed?}
+![Deployment lifecycle](diagrams/blockchain-rust-smart-contract-docs-08.svg)
 
-    E -->|No| F[Fix Issues]
-    F --> B
-
-    E -->|Yes| G[Build Anchor Program]
-    G --> H[Deploy to Devnet]
-    H --> I[Initialize Platform]
-    I --> J[Configure USDC Mint]
-    J --> K[Run Devnet Integration Tests]
-    K --> L[Independent Security Audit]
-    L --> M[Legal and Sharia Review]
-    M --> N[Production Deployment Approval]
-```
+[Mermaid source](diagrams/blockchain-rust-smart-contract-docs-08.mmd)
 
 ## 15.2 Devnet deployment
 

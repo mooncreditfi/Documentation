@@ -42,65 +42,9 @@ The MoonCreditFi system consists of three major infrastructure layers:
 
 ## 2.1 Overall architecture diagram
 
-```mermaid
-flowchart TB
-    subgraph USERS["Platform Participants"]
-        E[Entrepreneur]
-        I[Investor]
-        R[Authorized Reviewer]
-    end
+![Overall architecture diagram](diagrams/architecture-and-flowcharts-01.svg)
 
-    subgraph FRONTEND["Frontend Layer"]
-        UI[MoonCreditFi Web Application]
-        AUTH[SIWS Authentication]
-        WALLET[Solana Wallet Integration]
-        CLIENT[Anchor Program Client]
-    end
-
-    subgraph BACKEND["Backend Layer"]
-        API[Backend Services]
-        DB[(Supabase PostgreSQL)]
-        STORAGE[Private Document Storage]
-        VERIFY[Business Verification]
-        CRED[CredLayer Reputation]
-    end
-
-    subgraph BLOCKCHAIN["Solana Blockchain"]
-        PROGRAM[MoonCreditFi Anchor Program]
-        CONFIG[Platform Configuration]
-        PROFILE[Entrepreneur Profile]
-        PROPOSAL[Business Proposal]
-        POOL[Mudarabah Pool]
-        POSITION[Investor Position]
-        SETTLEMENT[Settlement Record]
-        VAULT[USDC Pool Vault]
-    end
-
-    E --> UI
-    I --> UI
-    R --> UI
-
-    UI --> AUTH
-    UI --> WALLET
-    UI --> API
-    UI --> CLIENT
-
-    API --> DB
-    API --> STORAGE
-    API --> VERIFY
-    API --> CRED
-
-    CLIENT --> PROGRAM
-    WALLET --> PROGRAM
-
-    PROGRAM --> CONFIG
-    PROGRAM --> PROFILE
-    PROGRAM --> PROPOSAL
-    PROGRAM --> POOL
-    PROGRAM --> POSITION
-    PROGRAM --> SETTLEMENT
-    PROGRAM --> VAULT
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-01.mmd)
 
 ## 2.2 Architecture responsibilities
 
@@ -124,26 +68,9 @@ It manages the relationship between platform configuration, entrepreneurs, finan
 
 ## 3.1 Program account architecture
 
-```mermaid
-flowchart TD
-    PROGRAM["MoonCreditFi Anchor Program"]
+![Program account architecture](diagrams/architecture-and-flowcharts-02.svg)
 
-    PROGRAM --> CONFIG["PlatformConfig PDA"]
-
-    CONFIG --> ENTRE["EntrepreneurProfile PDA"]
-
-    ENTRE --> PROPOSAL["BusinessProposal PDA"]
-
-    PROPOSAL --> POOL["MudarabahPool PDA"]
-
-    POOL --> POSITION["InvestorPosition PDA"]
-
-    POOL --> SETTLEMENT["SettlementRecord PDA"]
-
-    POOL --> VAULTAUTH["Vault Authority PDA"]
-
-    VAULTAUTH --> VAULT["USDC Token Vault"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-02.mmd)
 
 ## 3.2 Account responsibilities
 
@@ -162,59 +89,9 @@ The vault authority is a PDA used to authorize token transfers. The USDC vault i
 
 ## 3.3 Account relationships
 
-```mermaid
-erDiagram
-    PLATFORM_CONFIG ||--o{ ENTREPRENEUR_PROFILE : manages
-    ENTREPRENEUR_PROFILE ||--o{ BUSINESS_PROPOSAL : creates
-    BUSINESS_PROPOSAL ||--o| MUDARABAH_POOL : funds
-    MUDARABAH_POOL ||--o{ INVESTOR_POSITION : contains
-    MUDARABAH_POOL ||--o| SETTLEMENT_RECORD : settles
-    MUDARABAH_POOL ||--|| USDC_VAULT : controls
+![Account relationships](diagrams/architecture-and-flowcharts-03.svg)
 
-    PLATFORM_CONFIG {
-        pubkey authority
-        pubkey usdc_mint
-        bool paused
-        uint8 bump
-    }
-
-    ENTREPRENEUR_PROFILE {
-        pubkey entrepreneur
-        uint64 profile_id
-        uint8 bump
-    }
-
-    BUSINESS_PROPOSAL {
-        pubkey entrepreneur
-        uint64 proposal_id
-        uint64 requested_amount
-        bool approved
-    }
-
-    MUDARABAH_POOL {
-        pubkey proposal
-        pubkey entrepreneur
-        uint64 funding_target
-        uint64 total_contributed
-        uint64 total_returned
-        uint16 investor_profit_bps
-        uint16 entrepreneur_profit_bps
-    }
-
-    INVESTOR_POSITION {
-        pubkey pool
-        pubkey investor
-        uint64 contribution
-        uint64 claimed_amount
-    }
-
-    SETTLEMENT_RECORD {
-        pubkey pool
-        pubkey entrepreneur
-        uint64 total_returned
-        bool approved
-    }
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-03.mmd)
 
 This diagram describes the intended logical relationships. The actual account fields and cardinalities must be reconciled with the Anchor implementation.
 
@@ -224,20 +101,9 @@ Program Derived Addresses provide deterministic account addresses controlled by 
 
 ## 4.1 PDA derivation flow
 
-```mermaid
-flowchart TD
-    A["MoonCreditFi Program ID"]
+![PDA derivation flow](diagrams/architecture-and-flowcharts-04.svg)
 
-    A --> B["Platform Config Seeds"]
-    A --> C["Entrepreneur Seeds"]
-    A --> D["Proposal Seeds"]
-    A --> E["Pool Seeds"]
-    A --> F["Investor Position Seeds"]
-    A --> G["Settlement Seeds"]
-
-    E --> H["Vault Authority Seeds"]
-    H --> I["USDC Token Vault"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-04.mmd)
 
 ## 4.2 Proposed PDA seeds
 
@@ -259,40 +125,9 @@ This flow explains how an entrepreneur moves from account authentication to an a
 
 ## 5.1 Entrepreneur journey
 
-```mermaid
-flowchart TD
-    A["Entrepreneur Opens MoonCreditFi"]
+![Entrepreneur journey](diagrams/architecture-and-flowcharts-05.svg)
 
-    A --> B["Connect Solana Wallet"]
-    B --> C["SIWS Authentication"]
-
-    C --> D["Create Entrepreneur Profile"]
-
-    D --> E["Create Business Profile"]
-
-    E --> F["Submit Business Information"]
-    F --> G["Upload Supporting Documents"]
-
-    G --> H["Business Verification"]
-
-    H --> I{"Business Verified?"}
-
-    I -->|No| J["Request Corrections or Reject"]
-    J --> E
-
-    I -->|Yes| K["Create Financing Proposal"]
-
-    K --> L["Submit Proposal"]
-
-    L --> M["Authorized Review"]
-
-    M --> N{"Proposal Approved?"}
-
-    N -->|No| O["Proposal Rejected"]
-    N -->|Yes| P["Create Mudarabah Pool"]
-
-    P --> Q["Pool Opens for Contributions"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-05.mmd)
 
 ## 5.2 Important separation
 
@@ -308,66 +143,15 @@ This flow explains how an investor discovers a financing opportunity and contrib
 
 ## 6.1 Investor journey
 
-```mermaid
-flowchart TD
-    A["Investor Opens MoonCreditFi"]
+![Investor journey](diagrams/architecture-and-flowcharts-06.svg)
 
-    A --> B["Connect Wallet"]
-    B --> C["SIWS Authentication"]
-
-    C --> D["Open Investor Dashboard"]
-
-    D --> E["Explore Funding Opportunities"]
-
-    E --> F["Select Mudarabah Pool"]
-
-    F --> G["Review Business Information"]
-
-    G --> H["Review Financing Terms"]
-
-    H --> I{"Accept Terms?"}
-
-    I -->|No| E
-
-    I -->|Yes| J["Check USDC Balance"]
-
-    J --> K{"Sufficient Balance?"}
-
-    K -->|No| L["Display Insufficient Balance"]
-
-    K -->|Yes| M["Prepare Contribution Transaction"]
-
-    M --> N["Request Wallet Signature"]
-
-    N --> O["Submit Transaction to Solana"]
-
-    O --> P["Anchor Program Validates Transaction"]
-
-    P --> Q["Transfer USDC to Pool Vault"]
-
-    Q --> R["Update Investor Position"]
-
-    R --> S["Update Pool Contribution Total"]
-
-    S --> T["Display Confirmed Investment"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-06.mmd)
 
 ## 6.2 Contribution architecture
 
-```mermaid
-flowchart LR
-    A["Investor Wallet"] --> B["Investor USDC Account"]
+![Contribution architecture](diagrams/architecture-and-flowcharts-07.svg)
 
-    B -->|USDC Transfer| C["Pool USDC Vault"]
-
-    D["MoonCreditFi Program"] --> E["Validate Contribution"]
-
-    E --> C
-
-    D --> F["Investor Position PDA"]
-
-    D --> G["Mudarabah Pool PDA"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-07.mmd)
 
 Every contribution must be validated by the program. Frontend validation is only for user experience and is not a substitute for on-chain validation.
 
@@ -377,26 +161,9 @@ The Mudarabah pool manages the lifecycle of business financing.
 
 ## 7.1 State transition diagram
 
-```mermaid
-stateDiagram-v2
-    [*] --> Open
+![State transition diagram](diagrams/architecture-and-flowcharts-08.svg)
 
-    Open --> Funded: Funding target reached
-
-    Open --> Cancelled: Authorized cancellation
-
-    Funded --> Active: Capital disbursed
-
-    Funded --> Cancelled: Permitted cancellation
-
-    Active --> SettlementPending: Settlement submitted
-
-    SettlementPending --> Settled: Settlement approved
-
-    Settled --> [*]
-
-    Cancelled --> [*]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-08.mmd)
 
 ## 7.2 Lifecycle explanation
 
@@ -417,36 +184,9 @@ Once the pool has reached its funding target, the approved capital may be transf
 
 ## 8.1 Disbursement diagram
 
-```mermaid
-flowchart TD
-    A["Funding Target Reached"]
+![Disbursement diagram](diagrams/architecture-and-flowcharts-09.svg)
 
-    A --> B["Validate Pool State"]
-
-    B --> C{"Pool Fully Funded?"}
-
-    C -->|No| D["Reject Disbursement"]
-
-    C -->|Yes| E["Authorize Pool Activation"]
-
-    E --> F["Pool Becomes Active"]
-
-    F --> G["Request Capital Disbursement"]
-
-    G --> H["Validate Entrepreneur"]
-
-    H --> I["Validate Vault Authority"]
-
-    I --> J["Validate USDC Mint"]
-
-    J --> K["Execute Token Transfer"]
-
-    K --> L["Update Pool State"]
-
-    L --> M["Emit Disbursement Event"]
-
-    M --> N["Frontend Refreshes Pool Data"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-09.mmd)
 
 The contract must prevent a second disbursement for the same pool.
 
@@ -458,34 +198,9 @@ The contract records the settlement and enforces the authorized approval process
 
 ## 9.1 Settlement flow
 
-```mermaid
-flowchart TD
-    A["Business Activity Completed"]
+![Settlement flow](diagrams/architecture-and-flowcharts-10.svg)
 
-    A --> B["Entrepreneur Prepares Settlement"]
-
-    B --> C["Submit Settlement Information"]
-
-    C --> D["Create Settlement Record"]
-
-    D --> E["Authorized Reviewer"]
-
-    E --> F["Examine Supporting Evidence"]
-
-    F --> G{"Settlement Approved?"}
-
-    G -->|No| H["Request More Information"]
-
-    H --> B
-
-    G -->|Yes| I["Approve Settlement On-chain"]
-
-    I --> J["Record Total Returned Amount"]
-
-    J --> K["Calculate Profit or Loss"]
-
-    K --> L["Enable Eligible Distributions"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-10.mmd)
 
 ## 9.2 Off-chain and on-chain separation
 
@@ -507,53 +222,15 @@ The distribution process depends on the settlement outcome.
 
 ## 10.1 Profit scenario
 
-```mermaid
-flowchart TD
-    A["Settlement Approved"]
+![Profit scenario](diagrams/architecture-and-flowcharts-11.svg)
 
-    A --> B["Calculate Returned Capital"]
-
-    B --> C["Calculate Actual Profit"]
-
-    C --> D["Apply Agreed Profit-Sharing Ratio"]
-
-    D --> E["Calculate Investor Profit Share"]
-
-    D --> F["Calculate Entrepreneur Profit Share"]
-
-    E --> G["Calculate Each Investor's Entitlement"]
-
-    G --> H["Investor Claims Distribution"]
-
-    H --> I["Verify Claim Eligibility"]
-
-    I --> J["Transfer USDC"]
-
-    F --> K["Check Investor Claim Accounting"]
-
-    K --> L["Entrepreneur Claims Eligible Profit"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-11.mmd)
 
 ## 10.2 Loss scenario
 
-```mermaid
-flowchart TD
-    A["Settlement Approved"]
+![Loss scenario](diagrams/architecture-and-flowcharts-12.svg)
 
-    A --> B["Calculate Actual Capital Returned"]
-
-    B --> C["Determine Genuine Business Loss"]
-
-    C --> D["Calculate Investor Capital Loss"]
-
-    D --> E["Calculate Remaining Investor Entitlements"]
-
-    E --> F["Distribute Available Funds Proportionally"]
-
-    F --> G["Investors Claim Available Capital"]
-
-    G --> H["Complete Pool Accounting"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-12.mmd)
 
 In a genuine Mudarabah business loss, investors generally bear the financial capital loss, while the entrepreneur loses their effort and expected profit. Negligence, misconduct, fraud, or breach must be addressed through an appropriate determination.
 
@@ -561,75 +238,9 @@ In a genuine Mudarabah business loss, investors generally bear the financial cap
 
 The following diagram brings the entire MoonCreditFi financing lifecycle together.
 
-```mermaid
-flowchart TD
-    START["User Enters MoonCreditFi"]
+![Complete end-to-end system flow](diagrams/architecture-and-flowcharts-13.svg)
 
-    START --> AUTH["Wallet Connection and SIWS"]
-
-    AUTH --> ROLE{"User Role"}
-
-    ROLE -->|Entrepreneur| ENT["Entrepreneur Onboarding"]
-    ROLE -->|Investor| INV["Investor Onboarding"]
-
-    ENT --> BUSINESS["Create Business Profile"]
-
-    BUSINESS --> VERIFY["Business Verification"]
-
-    VERIFY --> APPROVAL{"Business Verified?"}
-
-    APPROVAL -->|No| CORRECTION["Correct Business Information"]
-
-    CORRECTION --> BUSINESS
-
-    APPROVAL -->|Yes| PROPOSAL["Create Financing Proposal"]
-
-    PROPOSAL --> REVIEW["Proposal Review"]
-
-    REVIEW --> APPROVED{"Proposal Approved?"}
-
-    APPROVED -->|No| REJECT["Proposal Rejected"]
-
-    APPROVED -->|Yes| CREATE["Create Mudarabah Pool"]
-
-    CREATE --> OPEN["Open Pool"]
-
-    INV --> EXPLORE["Explore Opportunities"]
-
-    EXPLORE --> REVIEWPOOL["Review Pool and Terms"]
-
-    OPEN --> REVIEWPOOL
-
-    REVIEWPOOL --> CONTRIBUTE["Investor Contributes USDC"]
-
-    CONTRIBUTE --> VAULT["USDC Enters Pool Vault"]
-
-    VAULT --> FUNDING{"Funding Target Reached?"}
-
-    FUNDING -->|No| OPEN
-
-    FUNDING -->|Yes| ACTIVE["Activate Pool"]
-
-    ACTIVE --> DISBURSE["Disburse Capital"]
-
-    DISBURSE --> BUSINESSACT["Entrepreneur Manages Business"]
-
-    BUSINESSACT --> SETTLEMENT["Submit Settlement"]
-
-    SETTLEMENT --> SETTLE_REVIEW["Settlement Review"]
-
-    SETTLE_REVIEW --> SETTLED{"Approved?"}
-
-    SETTLED -->|No| SETTLEMENT
-
-    SETTLED -->|Yes| CALC["Calculate Profit or Loss"]
-
-    CALC --> DISTRIBUTE["Investor Distributions"]
-
-    DISTRIBUTE --> ENTREPRENEUR["Eligible Entrepreneur Profit Claim"]
-
-    ENTREPRENEUR --> COMPLETE["Pool Accounting Complete"]
-```
+[Mermaid source](diagrams/architecture-and-flowcharts-13.mmd)
 
 # 12. Architecture Boundaries and Security
 

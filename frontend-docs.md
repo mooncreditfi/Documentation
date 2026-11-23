@@ -71,51 +71,9 @@ The application is divided into five major layers:
 
 ### Architecture diagram
 
-```mermaid
-flowchart TB
-    U[User]
+![Architecture diagram](diagrams/frontend-docs-01.svg)
 
-    subgraph FE["MoonCreditFi Frontend"]
-        UI[Presentation Layer]
-        APP[Application Logic]
-        AUTH[Authentication and Wallet Layer]
-        DATA[Data Access Layer]
-        SOL[Solana Integration Layer]
-
-        UI --> APP
-        APP --> AUTH
-        APP --> DATA
-        APP --> SOL
-    end
-
-    subgraph BACKEND["Backend Infrastructure"]
-        SB[Supabase]
-        DB[(PostgreSQL Database)]
-        STORAGE[Private Document Storage]
-        API[Backend Services]
-        SB --> DB
-        SB --> STORAGE
-        SB --> API
-    end
-
-    subgraph CHAIN["Solana Blockchain"]
-        WALLET[Solana Wallet]
-        PROGRAM[MoonCreditFi Anchor Program]
-        VAULT[USDC Vault]
-        PROGRAM --> VAULT
-    end
-
-    subgraph EXT["External Services"]
-        CL[CredLayer Reputation Services]
-    end
-
-    U --> UI
-    AUTH <--> WALLET
-    DATA <--> SB
-    DATA <--> API
-    SOL <--> PROGRAM
-    API <--> CL
-```
+[Mermaid source](diagrams/frontend-docs-01.mmd)
 
 ### Architecture explanation
 
@@ -226,36 +184,9 @@ The user must prove control of the wallet by signing a server-generated authenti
 
 ### Authentication flowchart
 
-```mermaid
-flowchart TD
-    A[User Opens MoonCreditFi] --> B[Connect Solana Wallet]
-    B --> C{Wallet Connected?}
+![Authentication flowchart](diagrams/frontend-docs-02.svg)
 
-    C -->|No| D[Display Wallet Connection Error]
-    D --> B
-
-    C -->|Yes| E[Request Authentication Nonce]
-    E --> F[Backend Generates Single-use Nonce]
-    F --> G[Frontend Builds SIWS Message]
-    G --> H[User Signs Message]
-
-    H --> I{Signature Valid?}
-
-    I -->|No| J[Reject Authentication]
-    I -->|Yes| K[Backend Verifies Signature]
-
-    K --> L[Validate Domain, URI, Network and Expiry]
-    L --> M[Create Secure Session]
-    M --> N[Retrieve User Profile]
-
-    N --> O{User Has Roles?}
-
-    O -->|No| P[Choose Investor or Entrepreneur]
-    O -->|Yes| Q[Open Application Dashboard]
-
-    P --> R[Save Selected Role]
-    R --> Q
-```
+[Mermaid source](diagrams/frontend-docs-02.mmd)
 
 ## 4.2 Authentication responsibilities
 
@@ -341,31 +272,9 @@ Routes are proposed examples. The final paths must match the actual router confi
 
 ## 5.3 Navigation flow
 
-```mermaid
-flowchart TD
-    A[MoonCreditFi Application] --> B{Authenticated?}
+![Navigation flow](diagrams/frontend-docs-03.svg)
 
-    B -->|No| C[Connect Wallet]
-    C --> D[SIWS Authentication]
-    D --> E[User Dashboard]
-
-    B -->|Yes| E
-
-    E --> F[Profile]
-    E --> G[Businesses]
-    E --> H[Opportunities]
-    E --> I[Investments]
-    E --> J[Transactions]
-    E --> K[Settings]
-
-    G --> L[Create Business]
-    G --> M[Manage Business]
-
-    H --> N[Review Funding Pool]
-    N --> O[Contribute USDC]
-
-    M --> P[Create Financing Proposal]
-```
+[Mermaid source](diagrams/frontend-docs-03.mmd)
 
 ---
 
@@ -388,30 +297,9 @@ The entrepreneur dashboard enables users to manage their businesses and financin
 
 ## 6.2 Business registration flow
 
-```mermaid
-flowchart TD
-    A[Entrepreneur Dashboard] --> B[Create Business Profile]
-    B --> C[Enter Business Information]
-    C --> D[Upload Required Documents]
-    D --> E[Validate Form Data]
-    E --> F{Validation Passed?}
+![Business registration flow](diagrams/frontend-docs-04.svg)
 
-    F -->|No| C
-    F -->|Yes| G[Submit to Backend]
-
-    G --> H[Store Business Record]
-    H --> I[Store Documents Privately]
-    I --> J[Verification Pending]
-
-    J --> K[Reviewer Examines Application]
-    K --> L{Verification Decision?}
-
-    L -->|Approved| M[Verified Business]
-    L -->|Rejected| N[Rejected / Changes Required]
-
-    M --> O[Eligible for Proposal Submission]
-    N --> P[Update Business Information]
-```
+[Mermaid source](diagrams/frontend-docs-04.mmd)
 
 A verified business should not automatically mean that a financing proposal is approved. Business verification and financing approval are separate decisions.
 
@@ -452,30 +340,9 @@ The investor dashboard provides access to financing opportunities and investment
 
 ## 7.2 Investor journey
 
-```mermaid
-flowchart TD
-    A[Investor Dashboard] --> B[Explore Opportunities]
-    B --> C[Select Business Proposal]
-    C --> D[Review Business Information]
-    D --> E[Review Funding Terms]
-    E --> F[Review Mudarabah Agreement]
+![Investor journey](diagrams/frontend-docs-05.svg)
 
-    F --> G{Investor Agrees?}
-
-    G -->|No| H[Return to Opportunities]
-    G -->|Yes| I[Connect / Verify Wallet]
-
-    I --> J[Check USDC Balance]
-    J --> K{Sufficient Balance?}
-
-    K -->|No| L[Display Insufficient Balance]
-    K -->|Yes| M[Prepare Contribution Transaction]
-
-    M --> N[Wallet Signs Transaction]
-    N --> O[Submit to Solana]
-    O --> P[Verify Transaction Confirmation]
-    P --> Q[Update Investment Position]
-```
+[Mermaid source](diagrams/frontend-docs-05.mmd)
 
 ## 7.3 Investment transparency
 
@@ -515,30 +382,9 @@ The frontend should not request or store wallet private keys or seed phrases.
 
 ## 8.2 Wallet transaction flow
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant F as Frontend
-    participant W as Wallet
-    participant S as Solana RPC
-    participant P as Anchor Program
+![Wallet transaction flow](diagrams/frontend-docs-06.svg)
 
-    U->>F: Initiates contribution
-    F->>S: Fetch account and pool state
-    S-->>F: Return account data
-    F->>F: Build transaction
-    F->>W: Request transaction signature
-    W-->>U: Display approval request
-    U->>W: Approve transaction
-    W-->>F: Signed transaction
-    F->>S: Submit transaction
-    S->>P: Execute Anchor instruction
-    P-->>S: Execution result
-    S-->>F: Transaction confirmation
-    F->>S: Refresh pool and investor position
-    S-->>F: Updated on-chain state
-    F-->>U: Display verified result
-```
+[Mermaid source](diagrams/frontend-docs-06.mmd)
 
 ## 8.3 Transaction states
 

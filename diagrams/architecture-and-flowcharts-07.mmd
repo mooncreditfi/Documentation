@@ -1,0 +1,12 @@
+flowchart LR
+    A["Investor Wallet"] --> B["Investor USDC Account"]
+
+    B -->|USDC Transfer| C["Pool USDC Vault"]
+
+    D["MoonCreditFi Program"] --> E["Validate Contribution"]
+
+    E --> C
+
+    D --> F["Investor Position PDA"]
+
+    D --> G["Mudarabah Pool PDA"]

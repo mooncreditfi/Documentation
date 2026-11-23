@@ -1,0 +1,67 @@
+flowchart TD
+    START["User Enters MoonCreditFi"]
+
+    START --> AUTH["Wallet Connection and SIWS"]
+
+    AUTH --> ROLE{"User Role"}
+
+    ROLE -->|Entrepreneur| ENT["Entrepreneur Onboarding"]
+    ROLE -->|Investor| INV["Investor Onboarding"]
+
+    ENT --> BUSINESS["Create Business Profile"]
+
+    BUSINESS --> VERIFY["Business Verification"]
+
+    VERIFY --> APPROVAL{"Business Verified?"}
+
+    APPROVAL -->|No| CORRECTION["Correct Business Information"]
+
+    CORRECTION --> BUSINESS
+
+    APPROVAL -->|Yes| PROPOSAL["Create Financing Proposal"]
+
+    PROPOSAL --> REVIEW["Proposal Review"]
+
+    REVIEW --> APPROVED{"Proposal Approved?"}
+
+    APPROVED -->|No| REJECT["Proposal Rejected"]
+
+    APPROVED -->|Yes| CREATE["Create Mudarabah Pool"]
+
+    CREATE --> OPEN["Open Pool"]
+
+    INV --> EXPLORE["Explore Opportunities"]
+
+    EXPLORE --> REVIEWPOOL["Review Pool and Terms"]
+
+    OPEN --> REVIEWPOOL
+
+    REVIEWPOOL --> CONTRIBUTE["Investor Contributes USDC"]
+
+    CONTRIBUTE --> VAULT["USDC Enters Pool Vault"]
+
+    VAULT --> FUNDING{"Funding Target Reached?"}
+
+    FUNDING -->|No| OPEN
+
+    FUNDING -->|Yes| ACTIVE["Activate Pool"]
+
+    ACTIVE --> DISBURSE["Disburse Capital"]
+
+    DISBURSE --> BUSINESSACT["Entrepreneur Manages Business"]
+
+    BUSINESSACT --> SETTLEMENT["Submit Settlement"]
+
+    SETTLEMENT --> SETTLE_REVIEW["Settlement Review"]
+
+    SETTLE_REVIEW --> SETTLED{"Approved?"}
+
+    SETTLED -->|No| SETTLEMENT
+
+    SETTLED -->|Yes| CALC["Calculate Profit or Loss"]
+
+    CALC --> DISTRIBUTE["Investor Distributions"]
+
+    DISTRIBUTE --> ENTREPRENEUR["Eligible Entrepreneur Profit Claim"]
+
+    ENTREPRENEUR --> COMPLETE["Pool Accounting Complete"]

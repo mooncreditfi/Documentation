@@ -1,0 +1,22 @@
+flowchart TD
+    A[Entrepreneur Dashboard] --> B[Create Business Profile]
+    B --> C[Enter Business Information]
+    C --> D[Upload Required Documents]
+    D --> E[Validate Form Data]
+    E --> F{Validation Passed?}
+
+    F -->|No| C
+    F -->|Yes| G[Submit to Backend]
+
+    G --> H[Store Business Record]
+    H --> I[Store Documents Privately]
+    I --> J[Verification Pending]
+
+    J --> K[Reviewer Examines Application]
+    K --> L{Verification Decision?}
+
+    L -->|Approved| M[Verified Business]
+    L -->|Rejected| N[Rejected / Changes Required]
+
+    M --> O[Eligible for Proposal Submission]
+    N --> P[Update Business Information]

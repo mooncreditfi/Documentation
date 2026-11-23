@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> Open
+
+    Open --> Funded: Funding target reached
+
+    Open --> Cancelled: Authorized cancellation
+
+    Funded --> Active: Capital disbursed
+
+    Funded --> Cancelled: Permitted cancellation
+
+    Active --> SettlementPending: Settlement submitted
+
+    SettlementPending --> Settled: Settlement approved
+
+    Settled --> [*]
+
+    Cancelled --> [*]

@@ -1,0 +1,14 @@
+flowchart TD
+    A[Pool Reaches Funding Target] --> B[Validate Pool Status]
+    B --> C{Fully Funded?}
+
+    C -->|No| D[Reject Disbursement]
+    C -->|Yes| E[Authorize Activation]
+
+    E --> F[Activate Pool]
+    F --> G[Authorize Capital Disbursement]
+    G --> H[Validate Vault Authority]
+    H --> I[Transfer USDC]
+    I --> J[Update Pool State]
+    J --> K[Emit Disbursement Event]
+    K --> L[Refresh Frontend]

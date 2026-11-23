@@ -1,0 +1,22 @@
+flowchart TD
+    A[Investor Dashboard] --> B[Explore Opportunities]
+    B --> C[Select Business Proposal]
+    C --> D[Review Business Information]
+    D --> E[Review Funding Terms]
+    E --> F[Review Mudarabah Agreement]
+
+    F --> G{Investor Agrees?}
+
+    G -->|No| H[Return to Opportunities]
+    G -->|Yes| I[Connect / Verify Wallet]
+
+    I --> J[Check USDC Balance]
+    J --> K{Sufficient Balance?}
+
+    K -->|No| L[Display Insufficient Balance]
+    K -->|Yes| M[Prepare Contribution Transaction]
+
+    M --> N[Wallet Signs Transaction]
+    N --> O[Submit to Solana]
+    O --> P[Verify Transaction Confirmation]
+    P --> Q[Update Investment Position]

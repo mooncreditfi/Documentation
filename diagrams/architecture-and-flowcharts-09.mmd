@@ -1,0 +1,28 @@
+flowchart TD
+    A["Funding Target Reached"]
+
+    A --> B["Validate Pool State"]
+
+    B --> C{"Pool Fully Funded?"}
+
+    C -->|No| D["Reject Disbursement"]
+
+    C -->|Yes| E["Authorize Pool Activation"]
+
+    E --> F["Pool Becomes Active"]
+
+    F --> G["Request Capital Disbursement"]
+
+    G --> H["Validate Entrepreneur"]
+
+    H --> I["Validate Vault Authority"]
+
+    I --> J["Validate USDC Mint"]
+
+    J --> K["Execute Token Transfer"]
+
+    K --> L["Update Pool State"]
+
+    L --> M["Emit Disbursement Event"]
+
+    M --> N["Frontend Refreshes Pool Data"]

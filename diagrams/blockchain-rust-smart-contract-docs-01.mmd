@@ -1,0 +1,50 @@
+flowchart TB
+    USER[Entrepreneur / Investor]
+
+    subgraph FRONTEND["MoonCreditFi Frontend"]
+        UI[User Interface]
+        WALLET[Solana Wallet]
+        CLIENT[Anchor Client]
+    end
+
+    subgraph PROGRAM["MoonCreditFi Solana Program"]
+        CONFIG[Platform Config]
+        ENTRE[Entrepreneur Profile]
+        PROPOSAL[Business Proposal]
+        POOL[Mudarabah Pool]
+        POSITION[Investor Position]
+        SETTLEMENT[Settlement Record]
+    end
+
+    subgraph TOKEN["SPL Token Infrastructure"]
+        MINT[USDC Mint]
+        VAULT[Pool USDC Vault]
+        ATA[Investor Token Account]
+    end
+
+    subgraph EXTERNAL["Off-chain Infrastructure"]
+        BACKEND[MoonCreditFi Backend]
+        DATABASE[(PostgreSQL)]
+        VERIFY[Business Verification]
+        CRED[CredLayer Reputation]
+    end
+
+    USER --> UI
+    UI --> WALLET
+    UI --> CLIENT
+    CLIENT --> PROGRAM
+
+    CONFIG --> ENTRE
+    ENTRE --> PROPOSAL
+    PROPOSAL --> POOL
+    POOL --> POSITION
+    POOL --> SETTLEMENT
+
+    WALLET --> ATA
+    MINT --> VAULT
+    ATA <--> VAULT
+
+    UI <--> BACKEND
+    BACKEND <--> DATABASE
+    BACKEND --> VERIFY
+    BACKEND --> CRED

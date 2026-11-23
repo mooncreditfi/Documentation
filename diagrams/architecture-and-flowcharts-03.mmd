@@ -1,0 +1,51 @@
+erDiagram
+    PLATFORM_CONFIG ||--o{ ENTREPRENEUR_PROFILE : manages
+    ENTREPRENEUR_PROFILE ||--o{ BUSINESS_PROPOSAL : creates
+    BUSINESS_PROPOSAL ||--o| MUDARABAH_POOL : funds
+    MUDARABAH_POOL ||--o{ INVESTOR_POSITION : contains
+    MUDARABAH_POOL ||--o| SETTLEMENT_RECORD : settles
+    MUDARABAH_POOL ||--|| USDC_VAULT : controls
+
+    PLATFORM_CONFIG {
+        pubkey authority
+        pubkey usdc_mint
+        bool paused
+        uint8 bump
+    }
+
+    ENTREPRENEUR_PROFILE {
+        pubkey entrepreneur
+        uint64 profile_id
+        uint8 bump
+    }
+
+    BUSINESS_PROPOSAL {
+        pubkey entrepreneur
+        uint64 proposal_id
+        uint64 requested_amount
+        bool approved
+    }
+
+    MUDARABAH_POOL {
+        pubkey proposal
+        pubkey entrepreneur
+        uint64 funding_target
+        uint64 total_contributed
+        uint64 total_returned
+        uint16 investor_profit_bps
+        uint16 entrepreneur_profit_bps
+    }
+
+    INVESTOR_POSITION {
+        pubkey pool
+        pubkey investor
+        uint64 contribution
+        uint64 claimed_amount
+    }
+
+    SETTLEMENT_RECORD {
+        pubkey pool
+        pubkey entrepreneur
+        uint64 total_returned
+        bool approved
+    }
