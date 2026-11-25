@@ -1,30 +1,3 @@
-MoonCreditFi Blockchain & Rust Smart Contract Documentation
-MoonCreditFi Contracts
-(Documentation draft)
-
-Trust Before Capital
-
-Solana · Rust · Anchor Framework · SPL USDC · Program Derived Addresses
-Blockchain
-
-Solana Devnet architecture and transaction lifecycle
-
-Smart contracts
-
-Rust, Anchor instructions and account validation
-
-USDC vaults
-
-Investor contributions and controlled distributions
-
-Security
-
-PDA authority, validation, access control and testing
-
-The following is a complete Markdown document you can save as:
-
-docs/contracts/overview.mdx
-:::writing{variant="document" id="82417"}
 # MoonCreditFi Blockchain & Smart Contract Documentation
 
 **Trust Before Capital**
@@ -657,9 +630,7 @@ This section documents the intended program instruction interface. Exact argumen
 
 ## 9.1 initialize_platform
 
-Purpose:
-
-Initializes the global platform configuration.
+**Purpose:** Initializes the global platform configuration.
 
 Responsibilities:
 
@@ -670,9 +641,7 @@ Responsibilities:
 
 ## 9.2 register_entrepreneur
 
-Purpose:
-
-Registers an entrepreneur on-chain.
+**Purpose:** Registers an entrepreneur on-chain.
 
 Responsibilities:
 
@@ -683,9 +652,7 @@ Responsibilities:
 
 ## 9.3 create_proposal
 
-Purpose:
-
-Creates a business financing proposal.
+**Purpose:** Creates a business financing proposal.
 
 Responsibilities:
 
@@ -697,9 +664,7 @@ Responsibilities:
 
 ## 9.4 approve_proposal
 
-Purpose:
-
-Approves a submitted proposal.
+**Purpose:** Approves a submitted proposal.
 
 Responsibilities:
 
@@ -710,9 +675,7 @@ Responsibilities:
 
 ## 9.5 create_pool
 
-Purpose:
-
-Creates a Mudarabah funding pool for an approved proposal.
+**Purpose:** Creates a Mudarabah funding pool for an approved proposal.
 
 Responsibilities:
 
@@ -725,9 +688,7 @@ Responsibilities:
 
 ## 9.6 contribute
 
-Purpose:
-
-Allows investors to contribute USDC.
+**Purpose:** Allows investors to contribute USDC.
 
 Responsibilities:
 
@@ -743,9 +704,7 @@ Responsibilities:
 
 ## 9.7 activate_pool
 
-Purpose:
-
-Moves a fully funded pool into its active state.
+**Purpose:** Moves a fully funded pool into its active state.
 
 Responsibilities:
 
@@ -758,9 +717,7 @@ The activation authority and exact activation conditions must be explicitly spec
 
 ## 9.8 disburse_capital
 
-Purpose:
-
-Transfers the approved capital from the pool vault to the entrepreneur.
+**Purpose:** Transfers the approved capital from the pool vault to the entrepreneur.
 
 Responsibilities:
 
@@ -776,9 +733,7 @@ Disbursement is an irreversible financial risk. A contract cannot guarantee that
 
 ## 9.9 submit_settlement
 
-Purpose:
-
-Allows an entrepreneur to submit settlement information.
+**Purpose:** Allows an entrepreneur to submit settlement information.
 
 Responsibilities:
 
@@ -792,9 +747,7 @@ Off-chain evidence and review are necessary for determining whether the reported
 
 ## 9.10 approve_settlement
 
-Purpose:
-
-Allows an authorized reviewer to approve a settlement.
+**Purpose:** Allows an authorized reviewer to approve a settlement.
 
 Responsibilities:
 
@@ -809,9 +762,7 @@ Approval must not be granted solely because the entrepreneur submitted a number.
 
 ## 9.11 claim_distribution
 
-Purpose:
-
-Allows an investor to claim their eligible distribution.
+**Purpose:** Allows an investor to claim their eligible distribution.
 
 Responsibilities:
 
@@ -825,9 +776,7 @@ Responsibilities:
 
 ## 9.12 claim_entrepreneur_profit
 
-Purpose:
-
-Allows the entrepreneur to claim their eligible share of realized profit.
+**Purpose:** Allows the entrepreneur to claim their eligible share of realized profit.
 
 Responsibilities:
 
@@ -842,9 +791,7 @@ The implementation must define what happens when an investor never claims. It mu
 
 ## 9.13 cancel_pool
 
-Purpose:
-
-Cancels an eligible pool.
+**Purpose:** Cancels an eligible pool.
 
 Responsibilities:
 
@@ -856,9 +803,7 @@ Responsibilities:
 
 ## 9.14 claim_refund
 
-Purpose:
-
-Allows investors to recover refundable contributions from a cancelled pool.
+**Purpose:** Allows investors to recover refundable contributions from a cancelled pool.
 
 Responsibilities:
 
@@ -1209,162 +1154,3 @@ Before deployment:
 
 Deploy using the configured Devnet environment:
 
-```bash
-anchor deploy --provider.cluster devnet
-```
-
-Verify the deployed program ID and transaction on a Solana explorer.
-
-## 15.3 Production deployment requirements
-
-Before Mainnet:
-
-- Complete independent security audits.
-- Review all privileged instructions.
-- Test all financial edge cases.
-- Confirm USDC mint configuration.
-- Establish multisig governance.
-- Define upgrade authority policy.
-- Complete legal and regulatory reviews.
-- Complete Sharia review before claiming Sharia compliance.
-- Establish monitoring and incident response.
-- Reconcile all financial accounting paths.
-
-A successful Devnet deployment does not mean a contract is safe for real funds.
-
----
-
-# 16. Frontend Integration
-
-The frontend interacts with the Anchor program through its generated IDL and a compatible client library.
-
-The integration should:
-
-1. Load the correct program ID and IDL.
-2. Connect to the correct Solana network.
-3. Derive the required PDAs.
-4. Fetch account data.
-5. Construct instructions.
-6. Request wallet signatures.
-7. Submit transactions.
-8. Confirm execution.
-9. Refresh account state.
-10. Display transaction results.
-
-Example conceptual flow:
-
-```typescript
-// Illustrative only. Adapt to the actual generated IDL
-// and installed Anchor client version.
-
-const transaction = await program.methods
-  .contribute(amount)
-  .accounts({
-    // Supply validated account addresses.
-  })
-  .transaction();
-
-const signature = await wallet.sendTransaction(
-  transaction,
-  connection
-);
-
-await connection.confirmTransaction(
-  signature,
-  "confirmed"
-);
-```
-
-The actual method signature and accounts must match the generated IDL.
-
-Never hardcode assumptions about account ordering or instruction arguments when the generated IDL is available.
-
----
-
-# 17. Known Limitations and Future Improvements
-
-The following are important design considerations and potential improvements. They must not be represented as implemented unless confirmed in the source code.
-
-- Emergency pause functionality.
-- Multisig-controlled administrative operations.
-- Authority rotation.
-- Milestone-based disbursement.
-- Funding deadlines.
-- Expired-pool handling.
-- Advanced settlement evidence references.
-- Automated vault reconciliation.
-- Residual token accounting.
-- Investor claim expiration policy.
-- Multiple approved token support.
-- Token-2022 compatibility.
-- Advanced event indexing.
-- On-chain governance.
-- Formal verification and property-based testing.
-
-A particularly important design question is how to handle investors who never claim their distributions. The contract must define the treatment of unclaimed investor funds before production.
-
----
-
-# 18. Important Financial and Technical Disclaimers
-
-MoonCreditFi uses a Mudarabah-inspired financing model.
-
-The smart contracts automate selected financial rules, but they do not independently establish whether a business is trustworthy, whether a loss is genuine, or whether a submitted settlement is truthful.
-
-A blockchain transaction is evidence of an on-chain action. It is not proof of the underlying real-world business activity.
-
-The platform must not promise guaranteed returns or guaranteed repayment.
-
-Contract deployment, security auditing, legal approval, regulatory compliance, and Sharia review are separate requirements.
-
----
-
-# 19. Conclusion
-
-The MoonCreditFi blockchain infrastructure provides the programmable financial foundation for the platform.
-
-The Rust and Anchor smart contracts are responsible for enforcing the on-chain rules governing:
-
-- Entrepreneur and proposal records.
-- Mudarabah pool creation.
-- Investor USDC contributions.
-- Capital disbursement.
-- Settlement approval.
-- Profit and loss allocation.
-- Investor distributions.
-- Refunds and accounting.
-
-The long-term goal is to provide a transparent, secure, and auditable financing infrastructure for entrepreneurs and investors.
-
-**MoonCreditFi — Trust Before Capital.**
-:::2. Recommended individual contract documentation files
-Don't keep everything in one huge page. Split the content into these pages so developers can navigate directly to the part they need.
-docs/contracts/
-│
-├── overview.mdx
-├── blockchain-architecture.mdx
-├── installation.mdx
-├── program-architecture.mdx
-├── accounts-and-pdas.mdx
-├── usdc-vault-architecture.mdx
-├── instructions.mdx
-├── investor-contributions.mdx
-├── mudarabah-lifecycle.mdx
-├── profit-and-loss-calculations.mdx
-├── capital-disbursement.mdx
-├── settlement-and-distribution.mdx
-├── events-and-errors.mdx
-├── security.mdx
-├── testing.mdx
-└── deployment.mdx
-
-3. Critical architecture decisions to resolve
-These are the issues I would challenge before calling the contract architecture production-ready.
-Issue	Why it matters
-Who approves settlements?	Determines who can authorize financial distributions.
-Who controls capital disbursement?	Prevents unauthorized or premature withdrawals.
-What happens to unclaimed investor funds?	Prevents the entrepreneur from claiming funds still owed to investors.
-How are genuine losses verified?	A smart contract cannot independently verify business performance.
-How is rounding dust handled?	Prevents unexplained residual funds.
-Who controls program upgrades?	Protects investors from unilateral changes to program behavior.
-What happens when an entrepreneur disappears?	Disbursement cannot guarantee recovery.
