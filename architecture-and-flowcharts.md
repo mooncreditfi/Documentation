@@ -2,294 +2,818 @@
 
 **Trust Before Capital**
 
-Technical architecture documentation for the MoonCreditFi Solana blockchain infrastructure.
+Technical architecture and workflow documentation for MoonCreditFi's Solana blockchain infrastructure.
 
 | Property | Details |
 |---|---|
 | Project | MoonCreditFi |
 | Blockchain | Solana |
-| Smart Contract Language | Rust |
-| Framework | Anchor |
-| Token | USDC |
+| Smart Contract | Rust + Anchor |
+| Token Standard | SPL Token |
+| Settlement Asset | USDC |
 | Network | Solana Devnet |
-| Architecture | Program-based financial infrastructure |
-| Status | Development |
+| State Management | Program Derived Addresses (PDAs) |
+| Primary Workflow | Mudarabah Business Financing |
+| Documentation Type | Blockchain Architecture & Flowcharts |
 
 ---
 
-# 1. Overview
+# 1. Architecture Overview
 
-MoonCreditFi uses Solana smart contracts to manage the on-chain components of a Mudarabah-based business financing system.
+MoonCreditFi uses a hybrid blockchain architecture that separates on-chain financial execution from off-chain application services.
 
-The blockchain architecture connects four major participants and components:
+The Solana program manages financial operations and enforces the rules governing investor contributions, funding pools, capital disbursement, settlements, and distributions.
 
-1. Entrepreneurs — Submit business financing proposals.
-2. Investors — Contribute USDC to financing pools.
-3. MoonCreditFi Smart Contracts — Enforce financial rules and manage on-chain state.
-4. Backend Infrastructure — Handles business information, verification, private documents, and off-chain services.
+The frontend provides the interface through which entrepreneurs and investors interact with the protocol.
 
-The architecture separates business information and verification from financial operations executed on-chain.
+The backend manages application data, user profiles, business information, verification processes, and other off-chain services.
 
-The Solana program controls the financial rules and token movements that are implemented in the contracts.
+## 1.1 High-Level Architecture
 
-# 2. High-Level System Architecture
+```mermaid
+flowchart TB
+    U["Platform Users"]
 
-The MoonCreditFi system consists of three major infrastructure layers:
+    U --> E["Entrepreneur"]
+    U --> I["Investor"]
+    U --> A["Platform Administrator"]
 
-- Frontend application.
-- Backend services.
-- Solana blockchain.
+    E --> FE["MoonCreditFi Frontend"]
+    I --> FE
+    A --> FE
 
-## 2.1 Overall architecture diagram
+    FE --> W["Solana Wallet Adapter"]
+    FE --> BE["Backend Services"]
+    FE --> RPC["Solana RPC"]
 
-![Overall architecture diagram](diagrams/architecture-and-flowcharts-01.svg)
+    BE --> DB["Supabase / Application Database"]
+    BE --> V["Business Verification"]
+    BE --> R["Reputation Services"]
 
-[Mermaid source](diagrams/architecture-and-flowcharts-01.mmd)
+    RPC --> P["MoonCreditFi Anchor Program"]
 
-## 2.2 Architecture responsibilities
+    P --> CFG["PlatformConfig PDA"]
+    P --> EP["EntrepreneurProfile PDA"]
+    P --> BP["BusinessProposal PDA"]
+    P --> MP["MudarabahPool PDA"]
+    P --> IP["InvestorPosition PDA"]
+    P --> SR["SettlementRecord PDA"]
+
+    MP --> VAULT["Pool USDC Vault"]
+    VAULT --> TOKEN["SPL Token Program"]
+
+    P --> EVENTS["Program Events"]
+    EVENTS --> RPC
+```
+
+## 1.2 Architecture Responsibilities
 
 | Layer | Responsibility |
 |---|---|
-| Frontend | User interaction, dashboards, transaction initiation |
-| Backend | Profiles, business data, verification and private records |
-| Solana | Financial state and program-enforced operations |
-| Wallet | Authentication signatures and transaction authorization |
-| CredLayer | Reputation and wallet risk signals |
+| Frontend | User interaction, wallet connection, transaction construction |
+| Wallet | Transaction and message signing |
+| Backend | User profiles, business information, verification and application services |
+| Supabase | Off-chain application data |
+| Solana RPC | Blockchain communication and account retrieval |
+| Anchor Program | Financial rules and instruction execution |
+| PDAs | Program-controlled state and deterministic account addresses |
+| SPL Token Program | USDC token transfers |
+| USDC Vault | Holds pool contributions and settlement funds |
 
-The backend must not be treated as the authority for actual on-chain balances.
+**Important:** The frontend and backend do not independently authorize blockchain transactions. The smart contract validates the supplied accounts and required signatures when instructions execute.
 
-Likewise, the blockchain cannot independently establish whether submitted business information is truthful.
+---
 
-# 3. Smart Contract Architecture
+# 2. On-chain Account Architecture
 
-The MoonCreditFi Anchor program is the core on-chain financial engine.
+MoonCreditFi uses program-owned accounts to represent the platform's financial and operational state.
 
-It manages the relationship between platform configuration, entrepreneurs, financing proposals, pools, investors, and settlements.
+## 2.1 Account Relationship Diagram
 
-## 3.1 Program account architecture
+```mermaid
+flowchart TD
+    PROGRAM["MoonCreditFi Program"]
 
-![Program account architecture](diagrams/architecture-and-flowcharts-02.svg)
+    PROGRAM --> CONFIG["PlatformConfig"]
+    PROGRAM --> ENTRE["EntrepreneurProfile"]
+    PROGRAM --> PROPOSAL["BusinessProposal"]
+    PROGRAM --> POOL["MudarabahPool"]
+    PROGRAM --> POSITION["InvestorPosition"]
+    PROGRAM --> SETTLEMENT["SettlementRecord"]
 
-[Mermaid source](diagrams/architecture-and-flowcharts-02.mmd)
+    CONFIG --> AUTH["Platform Authority"]
+    CONFIG --> MINT["Approved USDC Mint"]
 
-## 3.2 Account responsibilities
+    ENTRE --> OWNER["Entrepreneur Wallet"]
+    ENTRE --> PROPOSAL
 
-| Account | Responsibility |
+    PROPOSAL --> POOL
+
+    POOL --> VAULT["USDC Vault"]
+    POOL --> POSITION
+    POOL --> SETTLEMENT
+
+    POSITION --> INVESTOR["Investor Wallet"]
+    VAULT --> TOKEN["SPL Token Program"]
+```
+
+## 2.2 Account Descriptions
+
+| Account | Purpose |
 |---|---|
-| PlatformConfig | Stores global platform configuration |
-| EntrepreneurProfile | Represents an entrepreneur on-chain |
-| BusinessProposal | Represents a financing proposal |
-| MudarabahPool | Maintains pool financial state |
-| InvestorPosition | Tracks an investor's contribution and claim |
-| SettlementRecord | Records settlement submission and approval |
-| Vault Authority | Controls the pool vault through PDA signing |
-| USDC Vault | Holds pool USDC tokens |
+| PlatformConfig | Stores global platform configuration and authority |
+| EntrepreneurProfile | Represents an entrepreneur's on-chain registration |
+| BusinessProposal | Stores financing proposal information |
+| MudarabahPool | Stores pool funding and settlement state |
+| InvestorPosition | Tracks an investor's contribution and claim status |
+| SettlementRecord | Stores submitted and approved settlement information |
+| USDC Vault | Holds the USDC associated with a financing pool |
 
-The vault authority is a PDA used to authorize token transfers. The USDC vault itself is a token account.
+These relationships describe the documented architecture. Exact account fields and constraints must be checked against the deployed Rust source and IDL.
 
-## 3.3 Account relationships
+---
 
-![Account relationships](diagrams/architecture-and-flowcharts-03.svg)
+# 3. PDA Architecture
 
-[Mermaid source](diagrams/architecture-and-flowcharts-03.mmd)
+Program Derived Addresses provide deterministic account locations and allow the program to authorize specific operations without maintaining a conventional private key for each PDA.
 
-This diagram describes the intended logical relationships. The actual account fields and cardinalities must be reconciled with the Anchor implementation.
+## 3.1 PDA Derivation Flow
 
-# 4. PDA Architecture
+```mermaid
+flowchart TD
+    A["MoonCreditFi Program ID"]
 
-Program Derived Addresses provide deterministic account addresses controlled by the MoonCreditFi program.
+    A --> B["PDA Seeds"]
+    B --> C["Address Derivation"]
+    C --> D["Canonical Bump"]
+    D --> E["Derived Account Address"]
 
-## 4.1 PDA derivation flow
+    E --> F["Anchor Account Validation"]
+    F --> G{"Expected PDA?"}
 
-![PDA derivation flow](diagrams/architecture-and-flowcharts-04.svg)
+    G -->|Yes| H["Continue Instruction"]
+    G -->|No| I["Reject Transaction"]
+```
 
-[Mermaid source](diagrams/architecture-and-flowcharts-04.mmd)
+## 3.2 Documented PDA Design
 
-## 4.2 Proposed PDA seeds
-
-| Account | Seeds |
+| Account | Suggested Seeds |
 |---|---|
-| PlatformConfig | `platform_config` |
-| EntrepreneurProfile | `entrepreneur + entrepreneur_pubkey` |
-| BusinessProposal | `proposal + entrepreneur_pubkey + proposal_id` |
-| MudarabahPool | `pool + proposal_pubkey` |
-| InvestorPosition | `position + pool_pubkey + investor_pubkey` |
-| SettlementRecord | `settlement + pool_pubkey` |
-| Vault Authority | `vault_authority + pool_pubkey` |
+| PlatformConfig | `["platform_config"]` |
+| EntrepreneurProfile | `["entrepreneur", entrepreneur_pubkey]` |
+| BusinessProposal | `["proposal", entrepreneur_pubkey, proposal_id]` |
+| MudarabahPool | `["pool", proposal_pubkey]` |
+| InvestorPosition | `["position", pool_pubkey, investor_pubkey]` |
+| SettlementRecord | `["settlement", pool_pubkey]` |
+| Pool vault authority | `["vault_authority", pool_pubkey]` |
 
-The actual program seed definitions are authoritative.
+These are the proposed seed conventions in the architecture draft. The actual deployed program's seed definitions are authoritative.
 
-# 5. Entrepreneur Financing Flow
+## 3.3 PDA Security Flow
 
-This flow explains how an entrepreneur moves from account authentication to an approved financing opportunity.
+```mermaid
+flowchart TD
+    A["Instruction Received"]
+    B["Read Supplied Accounts"]
+    C["Derive Expected PDA"]
+    D{"Address Matches?"}
+    E["Validate Account Ownership"]
+    F["Validate Account Data"]
+    G["Execute Instruction"]
+    H["Return Error"]
 
-## 5.1 Entrepreneur journey
+    A --> B --> C --> D
+    D -->|Yes| E --> F --> G
+    D -->|No| H
+```
 
-![Entrepreneur journey](diagrams/architecture-and-flowcharts-05.svg)
+---
 
-[Mermaid source](diagrams/architecture-and-flowcharts-05.mmd)
+# 4. USDC Vault Architecture
 
-## 5.2 Important separation
+Each financing pool is intended to have a dedicated USDC vault controlled through the program's PDA authority.
 
-Business verification and financing proposal approval are separate operations.
+Investors contribute USDC to the vault. When the relevant conditions are satisfied, the program can authorize transfers through the SPL Token Program.
 
-A verified business is not automatically entitled to funding.
+## 4.1 Vault Relationship
 
-A financing proposal must undergo its own review and approval process.
+```mermaid
+flowchart TB
+    INVESTOR["Investor Wallet"]
 
-# 6. Investor Funding Flow
+    INVESTOR --> SOURCE["Investor USDC Token Account"]
 
-This flow explains how an investor discovers a financing opportunity and contributes USDC.
+    SOURCE -->|"Contribution"| TOKEN["SPL Token Program"]
 
-## 6.1 Investor journey
+    TOKEN --> VAULT["Pool USDC Vault"]
 
-![Investor journey](diagrams/architecture-and-flowcharts-06.svg)
+    AUTH["Vault Authority PDA"] --> PROGRAM["MoonCreditFi Program"]
 
-[Mermaid source](diagrams/architecture-and-flowcharts-06.mmd)
+    PROGRAM -->|"Authorized CPI"| TOKEN
 
-## 6.2 Contribution architecture
+    VAULT -->|"Approved Distribution"| TOKEN
 
-![Contribution architecture](diagrams/architecture-and-flowcharts-07.svg)
+    TOKEN --> INVESTOR2["Investor Token Account"]
 
-[Mermaid source](diagrams/architecture-and-flowcharts-07.mmd)
+    TOKEN --> ENTRE["Entrepreneur Token Account"]
+```
 
-Every contribution must be validated by the program. Frontend validation is only for user experience and is not a substitute for on-chain validation.
+## 4.2 Contribution Transaction Flow
 
-# 7. Mudarabah Pool Lifecycle
+```mermaid
+sequenceDiagram
+    actor Investor
+    participant Frontend
+    participant Wallet
+    participant RPC
+    participant Program as MoonCreditFi Program
+    participant Token as SPL Token Program
 
-The Mudarabah pool manages the lifecycle of business financing.
+    Investor->>Frontend: Select funding pool
+    Frontend->>RPC: Fetch pool and account state
+    RPC-->>Frontend: Return pool information
 
-## 7.1 State transition diagram
+    Investor->>Frontend: Enter contribution amount
+    Frontend->>Wallet: Request transaction signature
+    Wallet-->>Frontend: Signed transaction
 
-![State transition diagram](diagrams/architecture-and-flowcharts-08.svg)
+    Frontend->>RPC: Submit transaction
+    RPC->>Program: Execute contribute instruction
 
-[Mermaid source](diagrams/architecture-and-flowcharts-08.mmd)
+    Program->>Program: Validate signer and pool
+    Program->>Program: Validate mint and vault
+    Program->>Program: Validate contribution limit
 
-## 7.2 Lifecycle explanation
+    Program->>Token: TransferChecked via CPI
+    Token-->>Program: Transfer result
 
-| Status | Description |
+    Program->>Program: Update InvestorPosition
+    Program->>Program: Update total contributions
+
+    Program-->>RPC: Emit contribution event
+    RPC-->>Frontend: Transaction result
+    Frontend-->>Investor: Display confirmation
+```
+
+## 4.3 Contribution Validation
+
+The contract should verify:
+
+- Investor authorization.
+- Correct pool address.
+- Correct USDC mint.
+- Correct source token account.
+- Correct pool vault.
+- Correct vault authority.
+- Positive contribution amount.
+- Pool status is Open.
+- Contribution does not exceed the remaining funding target.
+
+A successful frontend submission is not sufficient proof of a successful contribution. The transaction must be confirmed and the resulting on-chain state checked.
+
+---
+
+# 5. Entrepreneur Financing Workflow
+
+The entrepreneur financing workflow starts with registration and ends with the creation of an approved financing pool.
+
+## 5.1 Entrepreneur Proposal Flowchart
+
+```mermaid
+flowchart TD
+    START(["Start"])
+
+    START --> CONNECT["Connect Solana Wallet"]
+    CONNECT --> REGISTER["Register Entrepreneur"]
+    REGISTER --> PROFILE["Create Entrepreneur Profile"]
+
+    PROFILE --> CREATE["Submit Business Proposal"]
+    CREATE --> REVIEW["Platform Reviews Proposal"]
+
+    REVIEW --> DECISION{"Proposal Approved?"}
+
+    DECISION -->|No| REJECT["Proposal Rejected or Returned"]
+    REJECT --> END1(["End"])
+
+    DECISION -->|Yes| APPROVE["approve_proposal"]
+    APPROVE --> CREATEPOOL["create_pool"]
+
+    CREATEPOOL --> VAULT["Initialize Pool Vault"]
+    VAULT --> OPEN["Pool Status: Open"]
+
+    OPEN --> END2(["Funding Available"])
+```
+
+## 5.2 Workflow Instructions
+
+| Step | Instruction | Description |
+|---|---|---|
+| 1 | `register_entrepreneur` | Registers the entrepreneur |
+| 2 | `create_proposal` | Creates a business financing proposal |
+| 3 | `approve_proposal` | Authorizes the proposal |
+| 4 | `create_pool` | Creates the financing pool and vault |
+
+Proposal review is an administrative process. A proposal must not be treated as approved simply because it exists on-chain.
+
+---
+
+# 6. Investor Funding Workflow
+
+After a pool is created and opened, investors can contribute USDC.
+
+## 6.1 Funding Flowchart
+
+```mermaid
+flowchart TD
+    A["Open Funding Pool"]
+    B["Investor Reviews Terms"]
+    C["Investor Connects Wallet"]
+    D["Enter USDC Contribution"]
+    E["Sign Transaction"]
+    F["Execute contribute"]
+    G{"Contract Validation"}
+
+    H["Transfer USDC to Vault"]
+    I["Create or Update InvestorPosition"]
+    J["Update Pool Total"]
+    K{"Funding Target Reached?"}
+
+    L["Continue Accepting Contributions"]
+    M["Pool Status: Funded"]
+    N["Stop Further Contributions"]
+
+    A --> B --> C --> D --> E --> F --> G
+
+    G -->|Invalid| X["Reject Transaction"]
+    G -->|Valid| H --> I --> J --> K
+
+    K -->|No| L
+    L --> B
+
+    K -->|Yes| M --> N
+```
+
+## 6.2 Funding Rules
+
+- Contributions must be greater than zero.
+- Contributions must not exceed the funding target.
+- Only eligible pools can receive contributions.
+- Investor positions must be associated with the correct pool and wallet.
+- Contributions must be recorded using integer token base units.
+
+---
+
+# 7. Pool Activation and Capital Disbursement
+
+Once the pool reaches its funding target, the activation and capital disbursement process can begin.
+
+The documented contract flow requires the entrepreneur to activate the pool. Capital disbursement requires the entrepreneur and platform administrator signatures.
+
+## 7.1 Activation Flowchart
+
+```mermaid
+flowchart TD
+    A["Pool Status: Open"]
+    B["Check Total Contributions"]
+    C{"Target Reached?"}
+
+    D["Remain Open"]
+    E["Entrepreneur Activates Pool"]
+    F["activate_pool"]
+    G["Pool Status: Funded"]
+
+    H["Entrepreneur + Admin Authorize"]
+    I["disburse_capital"]
+    J["Validate Vault and Destination"]
+    K["Transfer USDC to Entrepreneur"]
+    L["Pool Status: Active"]
+
+    A --> B --> C
+    C -->|No| D
+    C -->|Yes| E --> F --> G
+    G --> H --> I --> J --> K --> L
+```
+
+## 7.2 Capital Disbursement Sequence
+
+```mermaid
+sequenceDiagram
+    actor Entrepreneur
+    actor Admin as Platform Admin
+    participant Frontend
+    participant Program as MoonCreditFi Program
+    participant Vault as USDC Vault
+    participant Token as SPL Token Program
+
+    Entrepreneur->>Frontend: Request pool activation
+    Frontend->>Program: activate_pool
+    Program->>Program: Validate funding target
+    Program->>Program: Validate pool status
+    Program-->>Frontend: Pool funded
+
+    Entrepreneur->>Frontend: Request capital disbursement
+    Frontend->>Program: disburse_capital
+    Admin->>Frontend: Provide required authorization
+
+    Program->>Program: Validate required signers
+    Program->>Program: Validate pool and vault
+
+    Program->>Token: Transfer USDC using PDA authority
+    Token->>Vault: Debit pool vault
+    Token-->>Program: Transfer result
+
+    Program->>Program: Update pool status to Active
+    Program-->>Frontend: Transaction result
+```
+
+**Financial risk:** Once capital has been transferred to the entrepreneur, the contract cannot guarantee repayment. Capital recovery depends on the business outcome, settlement process, and applicable agreements.
+
+---
+
+# 8. Settlement and Distribution Workflow
+
+After the business activity, the entrepreneur submits settlement information.
+
+The platform administrator reviews the settlement and approves the amount that will be used for distribution.
+
+## 8.1 Settlement Flowchart
+
+```mermaid
+flowchart TD
+    A["Pool Status: Active"]
+    B["Business Activity"]
+    C["Entrepreneur Prepares Settlement"]
+    D["submit_settlement"]
+    E["Pool Status: SettlementPending"]
+    F["Platform Reviews Settlement"]
+    G{"Settlement Approved?"}
+
+    H["Request Further Evidence or Reject"]
+    I["approve_settlement"]
+    J["Record Approved Return Amount"]
+    K["Pool Status: Settled"]
+
+    A --> B --> C --> D --> E --> F --> G
+
+    G -->|No| H
+    G -->|Yes| I --> J --> K
+```
+
+## 8.2 Settlement Sequence
+
+```mermaid
+sequenceDiagram
+    actor Entrepreneur
+    actor Admin as Platform Admin
+    participant Frontend
+    participant Program as MoonCreditFi Program
+    participant Vault as USDC Vault
+    participant Token as SPL Token Program
+
+    Entrepreneur->>Frontend: Submit business settlement
+    Frontend->>Program: submit_settlement
+
+    Program->>Program: Validate entrepreneur
+    Program->>Program: Validate pool status
+    Program->>Program: Record settlement
+    Program-->>Frontend: Settlement pending
+
+    Entrepreneur->>Frontend: Return USDC to pool vault
+    Frontend->>Program: Submit return transaction
+    Program->>Token: TransferChecked
+    Token->>Vault: Deposit returned USDC
+
+    Admin->>Frontend: Review settlement
+    Frontend->>Program: approve_settlement
+
+    Program->>Program: Validate admin authority
+    Program->>Program: Record approved return amount
+    Program->>Program: Set pool to Settled
+
+    Program-->>Frontend: Settlement approved
+```
+
+The returned funds must be deposited into the pool vault before they can be distributed. The settlement approval process does not itself prove the accuracy of the business's reported results.
+
+---
+
+# 9. Profit and Loss Distribution
+
+MoonCreditFi uses a Mudarabah-inspired profit-sharing model.
+
+The investor and entrepreneur agree on profit-sharing percentages. Investors provide capital, while the entrepreneur manages the business.
+
+## 9.1 Profit Distribution Flowchart
+
+```mermaid
+flowchart TD
+    A["Approved Settlement"]
+    B["Calculate Total Returned"]
+    C["Calculate Realized Profit"]
+    D{"Profit Greater Than Zero?"}
+
+    E["Calculate Investor Profit Share"]
+    F["Calculate Entrepreneur Profit Share"]
+    G["Investors Claim Distribution"]
+    H["Track Investor Claims"]
+    I{"All Investor Claims Accounted For?"}
+    J["Entrepreneur Claims Profit"]
+
+    K["Calculate Capital Loss"]
+    L["Allocate Returned Capital Proportionally"]
+    M["Investors Claim Available Capital"]
+
+    N["Complete Distribution"]
+
+    A --> B --> C --> D
+
+    D -->|Yes| E --> F --> G --> H --> I
+    I -->|No| H
+    I -->|Yes| J --> N
+
+    D -->|No| K --> L --> M --> N
+```
+
+## 9.2 Example: Profit Scenario
+
+Assume:
+
+| Item | Amount |
+|---|---:|
+| Total investor capital | 10,000 USDC |
+| Total returned | 12,000 USDC |
+| Realized profit | 2,000 USDC |
+| Investor profit share | 70% |
+| Entrepreneur profit share | 30% |
+
+Calculation:
+
+```text
+Realized Profit = 12,000 - 10,000
+
+Investor Profit = 2,000 × 70%
+               = 1,400 USDC
+
+Entrepreneur Profit = 2,000 × 30%
+                    = 600 USDC
+```
+
+Investors collectively receive 11,400 USDC, while the entrepreneur receives 600 USDC.
+
+These amounts are illustrative and are not guaranteed returns.
+
+## 9.3 Example: Loss Scenario
+
+Assume:
+
+| Item | Amount |
+|---|---:|
+| Total investor capital | 10,000 USDC |
+| Total returned | 8,000 USDC |
+| Business loss | 2,000 USDC |
+
+The available 8,000 USDC is distributed among investors in proportion to their respective contributions.
+
+The entrepreneur receives no profit distribution in this example.
+
+Liability for negligence, misconduct, fraud, or contractual breach requires an appropriate determination.
+
+## 9.4 Distribution Sequence
+
+```mermaid
+sequenceDiagram
+    actor Investor
+    actor Entrepreneur
+    participant Frontend
+    participant Program as MoonCreditFi Program
+    participant Vault as USDC Vault
+    participant Token as SPL Token Program
+
+    Investor->>Frontend: Request distribution
+    Frontend->>Program: claim_distribution
+
+    Program->>Program: Validate investor position
+    Program->>Program: Calculate entitlement
+    Program->>Program: Check claimed status
+
+    Program->>Token: Transfer investor entitlement
+    Token->>Vault: Debit vault
+    Token-->>Program: Transfer result
+
+    Program->>Program: Mark investor position claimed
+
+    Program-->>Frontend: Claim confirmation
+
+    Entrepreneur->>Frontend: Request entrepreneur profit
+    Frontend->>Program: claim_entrepreneur_profit
+
+    Program->>Program: Check investor claim accounting
+    Program->>Program: Calculate entrepreneur profit
+    Program->>Token: Transfer eligible profit
+    Program-->>Frontend: Profit claim result
+```
+
+---
+
+# 10. Pool Cancellation and Refund Flow
+
+A pool may be cancelled under the conditions enforced by the contract.
+
+The documented cancellation flow supports cancellation of eligible Open or Funded pools. Investors can then claim eligible refunds.
+
+## 10.1 Cancellation Flowchart
+
+```mermaid
+flowchart TD
+    A["Pool Exists"]
+    B{"Current Pool Status"}
+
+    C["Open"]
+    D["Funded"]
+    E["Active or Later"]
+
+    F["Admin Calls cancel_pool"]
+    G["Validate Cancellation Conditions"]
+    H["Pool Status: Cancelled"]
+    I["Investor Calls claim_refund"]
+    J["Validate Investor Position"]
+    K["Transfer Refund"]
+    L["Mark Refund Claimed"]
+    M["Refund Completed"]
+
+    N["Cancellation Not Permitted"]
+
+    A --> B
+    B -->|Open| C --> F
+    B -->|Funded| D --> F
+    B -->|Active or Later| E --> N
+
+    F --> G --> H --> I --> J --> K --> L --> M
+```
+
+## 10.2 Refund Rules
+
+- Only cancelled pools can process refunds.
+- The investor must own the corresponding position.
+- Refunds must not exceed the investor's refundable contribution.
+- Duplicate refunds must be rejected.
+- The pool vault must have sufficient funds.
+
+---
+
+# 11. Complete Mudarabah Lifecycle
+
+This diagram combines the principal financing stages into one view.
+
+```mermaid
+flowchart TD
+    START(["Start"])
+
+    START --> REG["Entrepreneur Registration"]
+    REG --> PROP["Business Proposal"]
+    PROP --> REVIEW["Platform Review"]
+
+    REVIEW --> APPROVED{"Approved?"}
+    APPROVED -->|No| REJECT["Rejected or Returned"]
+    REJECT --> END1(["End"])
+
+    APPROVED -->|Yes| POOL["Create Mudarabah Pool"]
+    POOL --> OPEN["Open for Contributions"]
+
+    OPEN --> FUND["Investor USDC Contributions"]
+    FUND --> TARGET{"Funding Target Reached?"}
+
+    TARGET -->|No| FUND
+    TARGET -->|Yes| ACTIVATION["Activate Pool"]
+
+    ACTIVATION --> DISBURSE["Disburse Capital"]
+    DISBURSE --> ACTIVE["Business Activity"]
+
+    ACTIVE --> SETTLEMENT["Submit Settlement"]
+    SETTLEMENT --> APPROVAL["Settlement Review"]
+
+    APPROVAL --> SETTLED["Approve Settlement"]
+    SETTLED --> DISTRIBUTION["Calculate Profit or Loss"]
+
+    DISTRIBUTION --> CLAIMS["Investor Claims"]
+    CLAIMS --> ENTREPRENEUR["Entrepreneur Profit Claim"]
+    ENTREPRENEUR --> END2(["Lifecycle Completed"])
+```
+
+This is the main financing lifecycle. The cancellation and refund path is handled separately.
+
+---
+
+# 12. Smart Contract Instruction Map
+
+| Instruction | Workflow |
 |---|---|
-| Open | Pool accepts investor contributions |
-| Funded | Funding target reached |
-| Active | Capital has been disbursed |
-| SettlementPending | Settlement awaits approval |
-| Settled | Settlement approved and distribution can proceed |
-| Cancelled | Pool cancelled under permitted conditions |
+| `initialize_platform` | Platform initialization |
+| `register_entrepreneur` | Entrepreneur onboarding |
+| `create_proposal` | Financing proposal creation |
+| `approve_proposal` | Proposal approval |
+| `create_pool` | Funding pool creation |
+| `contribute` | Investor funding |
+| `activate_pool` | Pool activation |
+| `disburse_capital` | Capital transfer |
+| `submit_settlement` | Settlement submission |
+| `approve_settlement` | Settlement approval |
+| `claim_distribution` | Investor distribution |
+| `claim_entrepreneur_profit` | Entrepreneur profit claim |
+| `cancel_pool` | Pool cancellation |
+| `claim_refund` | Investor refund |
 
-The program must enforce valid transitions and prevent unauthorized status changes.
+---
 
-# 8. Capital Disbursement Flow
+# 13. Transaction Security Architecture
 
-Once the pool has reached its funding target, the approved capital may be transferred to the entrepreneur.
+Every financial instruction must validate its accounts and authorization before executing.
 
-## 8.1 Disbursement diagram
+## 13.1 Transaction Validation Flow
 
-![Disbursement diagram](diagrams/architecture-and-flowcharts-09.svg)
+```mermaid
+flowchart TD
+    A["Transaction Submitted"]
+    B["Wallet Signature Verification"]
+    C["Program Instruction Execution"]
+    D["Account Ownership Validation"]
+    E["PDA Validation"]
+    F["Signer Authorization"]
+    G["Token and Mint Validation"]
+    H["Pool State Validation"]
+    I["Arithmetic and Balance Validation"]
+    J{"All Checks Passed?"}
 
-[Mermaid source](diagrams/architecture-and-flowcharts-09.mmd)
+    K["Execute Financial Operation"]
+    L["Reject Transaction"]
 
-The contract must prevent a second disbursement for the same pool.
+    A --> B --> C --> D --> E --> F --> G --> H --> I --> J
+    J -->|Yes| K
+    J -->|No| L
+```
 
-# 9. Settlement Architecture
+## 13.2 Security Requirements
 
-After the entrepreneur completes the agreed business activity, settlement information is submitted for review.
+1. Validate every required signer.
+2. Validate every PDA using the correct seeds and bump.
+3. Validate the token mint and token program.
+4. Validate source and destination token accounts.
+5. Prevent duplicate claims.
+6. Prevent unauthorized capital disbursement.
+7. Use checked integer arithmetic.
+8. Enforce valid pool status transitions.
+9. Restrict administrative operations.
+10. Define upgrade authority governance.
 
-The contract records the settlement and enforces the authorized approval process.
+A successful transaction signature alone does not establish that the real-world business activity or settlement is truthful.
 
-## 9.1 Settlement flow
+---
 
-![Settlement flow](diagrams/architecture-and-flowcharts-10.svg)
+# 14. Important Architecture Limitations
 
-[Mermaid source](diagrams/architecture-and-flowcharts-10.mmd)
+The diagrams describe the intended contract and application architecture. They do not prove that every component has been implemented or exposed through the frontend.
 
-## 9.2 Off-chain and on-chain separation
+The following items require explicit verification:
 
-| Operation | Location |
-|---|---|
-| Business financial documents | Private backend storage |
-| Business evidence review | Off-chain review process |
-| Settlement submission | Backend and blockchain as designed |
-| Settlement approval | Authorized on-chain instruction |
-| Distribution calculations | Smart contract |
-| Token transfers | Solana |
-| Transaction records | Solana |
+- Whether all documented account fields match the Rust structs.
+- Whether the proposed PDA seeds match the deployed program.
+- Whether the frontend exposes every contract instruction.
+- Whether returned settlement funds are deposited before approval.
+- Whether all investor distributions are fully accounted for.
+- How unclaimed investor funds are handled.
+- How rounding residuals are reconciled.
+- Whether emergency pause functionality exists.
+- Whether administrative control is protected by multisig governance.
 
-An approved settlement means an authorized reviewer accepted the submitted information. It does not make the underlying business figures independently proven facts.
+**Critical financial consideration:** The smart contract can enforce how a submitted settlement is distributed. It cannot independently establish whether the entrepreneur's reported business profit or loss is genuine.
 
-# 10. Profit and Loss Distribution Flow
+---
 
-The distribution process depends on the settlement outcome.
+# 15. Documentation References
 
-## 10.1 Profit scenario
+- [Solana Core Concepts](https://solana.com/docs/core)
+- [Solana Program Derived Addresses](https://solana.com/docs/core/pda)
+- [Solana Token Program CPI](https://solana.com/docs/tokens/advanced/cpi)
+- [Solana Program Development](https://solana.com/developers/docs/programs)
 
-![Profit scenario](diagrams/architecture-and-flowcharts-11.svg)
+---
 
-[Mermaid source](diagrams/architecture-and-flowcharts-11.mmd)
+# 16. Conclusion
 
-## 10.2 Loss scenario
+MoonCreditFi's blockchain architecture connects entrepreneurs, investors, application services, Solana wallets, and the Anchor smart contract.
 
-![Loss scenario](diagrams/architecture-and-flowcharts-12.svg)
+The core on-chain workflow is:
 
-[Mermaid source](diagrams/architecture-and-flowcharts-12.mmd)
+1. Register entrepreneurs.
+2. Submit and approve financing proposals.
+3. Create Mudarabah funding pools.
+4. Accept investor USDC contributions.
+5. Activate fully funded pools.
+6. Disburse capital to entrepreneurs.
+7. Submit and approve settlements.
+8. Distribute realized profit or returned capital.
+9. Process eligible investor refunds when pools are cancelled.
 
-In a genuine Mudarabah business loss, investors generally bear the financial capital loss, while the entrepreneur loses their effort and expected profit. Negligence, misconduct, fraud, or breach must be addressed through an appropriate determination.
+The architecture aims to make financial operations transparent, programmable, and verifiable while recognizing that business verification, settlement evidence, legal agreements, and governance require additional off-chain processes.
 
-# 11. Complete End-to-End System Flow
-
-The following diagram brings the entire MoonCreditFi financing lifecycle together.
-
-![Complete end-to-end system flow](diagrams/architecture-and-flowcharts-13.svg)
-
-[Mermaid source](diagrams/architecture-and-flowcharts-13.mmd)
-
-# 12. Architecture Boundaries and Security
-
-The following responsibilities must remain clearly separated.
-
-| Responsibility | Authoritative layer |
-|---|---|
-| Wallet signature | Wallet cryptographic verification |
-| Authentication session | Backend |
-| User profile | Backend database |
-| Business documents | Private backend storage |
-| Business verification | Authorized review process |
-| Reputation signals | CredLayer service |
-| Pool financial state | Solana program |
-| Investor position | Solana program |
-| USDC vault balance | Solana token account |
-| Capital disbursement | Solana program |
-| Settlement review decision | Authorized reviewer |
-| Distribution entitlement | Solana program |
-| Transaction confirmation | Solana RPC and on-chain state |
-
-## 12.1 Security principles
-
-- Validate every signer.
-- Validate every PDA.
-- Validate token mint and token accounts.
-- Use program-controlled vault authorities.
-- Prevent duplicate claims.
-- Prevent unauthorized withdrawals.
-- Use checked arithmetic.
-- Protect investor funds from arbitrary administrative withdrawal.
-- Use multisig governance for privileged production operations.
-- Maintain a clear audit trail.
-- Do not trust frontend-submitted financial state.
-
-# 13. Architecture Summary
-
-MoonCreditFi separates its blockchain infrastructure into distinct responsibilities:
-
-**Entrepreneur layer:** Business registration and financing proposals.
-
-**Investor layer:** Opportunity discovery and USDC contributions.
-
-**Smart contract layer:** Pool management, fund custody, capital disbursement, settlement authorization, and distributions.
-
-**Backend layer:** Business information, verification, documents, reputation, and other off-chain services.
-
-**Blockchain layer:** Verifiable financial transactions and program-enforced state transitions.
-
-The result is a financing architecture in which off-chain business processes interact with transparent on-chain financial operations.
-
-
+**MoonCreditFi — Trust Before Capital.**
